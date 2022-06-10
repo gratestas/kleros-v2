@@ -13,7 +13,8 @@
     "dynamic-script",
     "evidence-display",
     "klerosjs",
-    "subgraph",
+    "subgraph/arbitration",
+    "subgraph/fastbridge",
     "web"
   ],
   "packageManager": "yarn@3.2.0",
