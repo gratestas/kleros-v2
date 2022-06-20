@@ -17,7 +17,7 @@ import {
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-unused-expressions */ // https://github.com/standard/standard/issues/690#issuecomment-278533482
 
-describe("Demo pre-alpha1", function () {
+describe("Demo pre-alpha1", async () => {
   const ONE_TENTH_ETH = BigNumber.from(10).pow(17);
   const ONE_ETH = BigNumber.from(10).pow(18);
   const ONE_HUNDRED_PNK = BigNumber.from(10).pow(20);
@@ -56,16 +56,16 @@ describe("Demo pre-alpha1", function () {
       fallbackToGlobal: true,
       keepExistingDeployments: false,
     });
-    ng = <IncrementalNG>await ethers.getContract("IncrementalNG");
-    disputeKit = <DisputeKitClassic>await ethers.getContract("DisputeKitClassic");
-    pnk = <PNK>await ethers.getContract("PNK");
-    core = <KlerosCore>await ethers.getContract("KlerosCore");
-    fastBridgeReceiver = <FastBridgeReceiverOnEthereum>await ethers.getContract("FastBridgeReceiverOnEthereum");
-    foreignGateway = <ForeignGatewayOnEthereum>await ethers.getContract("ForeignGatewayOnEthereum");
-    arbitrable = <ArbitrableExample>await ethers.getContract("ArbitrableExample");
-    fastBridgeSender = <FastBridgeSenderToEthereum>await ethers.getContract("FastBridgeSenderToEthereumMock");
-    homeGateway = <HomeGatewayToEthereum>await ethers.getContract("HomeGatewayToEthereum");
-    inbox = <InboxMock>await ethers.getContract("InboxMock");
+    ng = (await ethers.getContract("IncrementalNG")) as IncrementalNG;
+    disputeKit = (await ethers.getContract("DisputeKitClassic")) as DisputeKitClassic;
+    pnk = (await ethers.getContract("PNK")) as PNK;
+    core = (await ethers.getContract("KlerosCore")) as KlerosCore;
+    fastBridgeReceiver = (await ethers.getContract("FastBridgeReceiverOnEthereum")) as FastBridgeReceiverOnEthereum;
+    foreignGateway = (await ethers.getContract("ForeignGatewayOnEthereum")) as ForeignGatewayOnEthereum;
+    arbitrable = (await ethers.getContract("ArbitrableExample")) as ArbitrableExample;
+    fastBridgeSender = (await ethers.getContract("FastBridgeSenderToEthereumMock")) as FastBridgeSenderToEthereum;
+    homeGateway = (await ethers.getContract("HomeGatewayToEthereum")) as HomeGatewayToEthereum;
+    inbox = (await ethers.getContract("InboxMock")) as InboxMock;
   });
 
   it("RNG", async () => {
@@ -87,29 +87,29 @@ describe("Demo pre-alpha1", function () {
 
     await pnk.approve(core.address, ONE_THOUSAND_PNK.mul(100));
 
-    await core.setStake(0, ONE_THOUSAND_PNK);
-    await core.getJurorBalance(deployer, 0).then((result) => {
+    await core.setStake(1, ONE_THOUSAND_PNK);
+    await core.getJurorBalance(deployer, 1).then((result) => {
       expect(result.staked).to.equal(ONE_THOUSAND_PNK);
       expect(result.locked).to.equal(0);
       logJurorBalance(result);
     });
 
-    await core.setStake(0, ONE_HUNDRED_PNK.mul(5));
-    await core.getJurorBalance(deployer, 0).then((result) => {
+    await core.setStake(1, ONE_HUNDRED_PNK.mul(5));
+    await core.getJurorBalance(deployer, 1).then((result) => {
       expect(result.staked).to.equal(ONE_HUNDRED_PNK.mul(5));
       expect(result.locked).to.equal(0);
       logJurorBalance(result);
     });
 
-    await core.setStake(0, 0);
-    await core.getJurorBalance(deployer, 0).then((result) => {
+    await core.setStake(1, 0);
+    await core.getJurorBalance(deployer, 1).then((result) => {
       expect(result.staked).to.equal(0);
       expect(result.locked).to.equal(0);
       logJurorBalance(result);
     });
 
-    await core.setStake(0, ONE_THOUSAND_PNK.mul(4));
-    await core.getJurorBalance(deployer, 0).then((result) => {
+    await core.setStake(1, ONE_THOUSAND_PNK.mul(4));
+    await core.getJurorBalance(deployer, 1).then((result) => {
       expect(result.staked).to.equal(ONE_THOUSAND_PNK.mul(4));
       expect(result.locked).to.equal(0);
       logJurorBalance(result);
@@ -118,8 +118,8 @@ describe("Demo pre-alpha1", function () {
     const trace = await network.provider.send("debug_traceTransaction", [tx.hash]);
     const [disputeId] = ethers.utils.defaultAbiCoder.decode(["uint"], `0x${trace.returnValue}`);
     console.log("Dispute Created");
-    expect(tx).to.emit(foreignGateway, "DisputeCreation"); //.withArgs(disputeId, deployer.address);
-    expect(tx).to.emit(foreignGateway, "OutgoingDispute"); //.withArgs(disputeId, deployer.address);
+    expect(tx).to.emit(foreignGateway, "DisputeCreation");
+    expect(tx).to.emit(foreignGateway, "OutgoingDispute");
     console.log(`disputeId: ${disputeId}`);
 
     const lastBlock = await ethers.provider.getBlock(tx.blockNumber - 1);
@@ -141,7 +141,6 @@ describe("Demo pre-alpha1", function () {
 
     await network.provider.send("evm_increaseTime", [130]); // Wait for minStakingTime
     await network.provider.send("evm_mine");
-
     expect(await core.phase()).to.equal(Phase.staking);
     expect(await disputeKit.phase()).to.equal(DisputeKitPhase.resolving);
     expect(await disputeKit.disputesWithoutJurors()).to.equal(1);
@@ -176,14 +175,13 @@ describe("Demo pre-alpha1", function () {
 
     await core.passPeriod(0);
     expect((await core.disputes(0)).period).to.equal(Period.vote);
-    await disputeKit.connect(await ethers.getSigner(deployer)).castVote(0, [0, 1, 2], 0, 0);
+    await disputeKit.connect(await ethers.getSigner(deployer)).castVote(0, [0, 1, 2], 0, 0, "");
     await core.passPeriod(0);
     await core.passPeriod(0);
     expect((await core.disputes(0)).period).to.equal(Period.execution);
     await core.execute(0, 0, 1000);
     const ticket1 = await fastBridgeSender.currentTicketID();
     expect(ticket1).to.equal(1);
-
     const tx4 = await core.executeRuling(0);
     expect(tx4).to.emit(fastBridgeSender, "OutgoingMessage");
 
@@ -200,7 +198,7 @@ describe("Demo pre-alpha1", function () {
     const messageData = event5[0].args.message;
 
     const bridgerBalance = await ethers.provider.getBalance(bridger.address);
-    // bridger tx starts - Honest Bridger 
+    // bridger tx starts - Honest Bridger
     const tx5 = await fastBridgeReceiver.connect(bridger).claim(ticketID, messageHash, { value: ONE_TENTH_ETH });
     const blockNumBefore = await ethers.provider.getBlockNumber();
     const blockBefore = await ethers.provider.getBlock(blockNumBefore);
@@ -225,29 +223,29 @@ describe("Demo pre-alpha1", function () {
 
     console.log("KC phase: %d, DK phase: ", await core.phase(), await disputeKit.phase());
 
-    await core.setStake(0, ONE_THOUSAND_PNK);
-    await core.getJurorBalance(deployer, 0).then((result) => {
+    await core.setStake(1, ONE_THOUSAND_PNK);
+    await core.getJurorBalance(deployer, 1).then((result) => {
       expect(result.staked).to.equal(ONE_THOUSAND_PNK);
       expect(result.locked).to.equal(0);
       logJurorBalance(result);
     });
 
-    await core.setStake(0, ONE_HUNDRED_PNK.mul(5));
-    await core.getJurorBalance(deployer, 0).then((result) => {
+    await core.setStake(1, ONE_HUNDRED_PNK.mul(5));
+    await core.getJurorBalance(deployer, 1).then((result) => {
       expect(result.staked).to.equal(ONE_HUNDRED_PNK.mul(5));
       expect(result.locked).to.equal(0);
       logJurorBalance(result);
     });
 
-    await core.setStake(0, 0);
-    await core.getJurorBalance(deployer, 0).then((result) => {
+    await core.setStake(1, 0);
+    await core.getJurorBalance(deployer, 1).then((result) => {
       expect(result.staked).to.equal(0);
       expect(result.locked).to.equal(0);
       logJurorBalance(result);
     });
 
-    await core.setStake(0, ONE_THOUSAND_PNK.mul(4));
-    await core.getJurorBalance(deployer, 0).then((result) => {
+    await core.setStake(1, ONE_THOUSAND_PNK.mul(4));
+    await core.getJurorBalance(deployer, 1).then((result) => {
       expect(result.staked).to.equal(ONE_THOUSAND_PNK.mul(4));
       expect(result.locked).to.equal(0);
       logJurorBalance(result);
@@ -256,8 +254,8 @@ describe("Demo pre-alpha1", function () {
     const trace = await network.provider.send("debug_traceTransaction", [tx.hash]);
     const [disputeId] = ethers.utils.defaultAbiCoder.decode(["uint"], `0x${trace.returnValue}`);
     console.log("Dispute Created");
-    expect(tx).to.emit(foreignGateway, "DisputeCreation"); //.withArgs(disputeId, deployer.address);
-    expect(tx).to.emit(foreignGateway, "OutgoingDispute"); //.withArgs(disputeId, deployer.address);
+    expect(tx).to.emit(foreignGateway, "DisputeCreation");
+    expect(tx).to.emit(foreignGateway, "OutgoingDispute");
     console.log(`disputeId: ${disputeId}`);
 
     const eventOutgoingDispute = foreignGateway.filters.OutgoingDispute();
@@ -342,7 +340,7 @@ describe("Demo pre-alpha1", function () {
 
     console.log("KC phase: %d, DK phase: ", await core.phase(), await disputeKit.phase());
 
-    await disputeKit.connect(await ethers.getSigner(deployer)).castVote(0, [0, 1, 2], 0, 0);
+    await disputeKit.connect(await ethers.getSigner(deployer)).castVote(0, [0, 1, 2], 0, 0, "");
     await core.passPeriod(0);
     await core.passPeriod(0);
     expect((await core.disputes(0)).period).to.equal(Period.execution);
@@ -419,29 +417,29 @@ describe("Demo pre-alpha1", function () {
 
     await pnk.approve(core.address, ONE_THOUSAND_PNK.mul(100));
 
-    await core.setStake(0, ONE_THOUSAND_PNK);
-    await core.getJurorBalance(deployer, 0).then((result) => {
+    await core.setStake(1, ONE_THOUSAND_PNK);
+    await core.getJurorBalance(deployer, 1).then((result) => {
       expect(result.staked).to.equal(ONE_THOUSAND_PNK);
       expect(result.locked).to.equal(0);
       logJurorBalance(result);
     });
 
-    await core.setStake(0, ONE_HUNDRED_PNK.mul(5));
-    await core.getJurorBalance(deployer, 0).then((result) => {
+    await core.setStake(1, ONE_HUNDRED_PNK.mul(5));
+    await core.getJurorBalance(deployer, 1).then((result) => {
       expect(result.staked).to.equal(ONE_HUNDRED_PNK.mul(5));
       expect(result.locked).to.equal(0);
       logJurorBalance(result);
     });
 
-    await core.setStake(0, 0);
-    await core.getJurorBalance(deployer, 0).then((result) => {
+    await core.setStake(1, 0);
+    await core.getJurorBalance(deployer, 1).then((result) => {
       expect(result.staked).to.equal(0);
       expect(result.locked).to.equal(0);
       logJurorBalance(result);
     });
 
-    await core.setStake(0, ONE_THOUSAND_PNK.mul(4));
-    await core.getJurorBalance(deployer, 0).then((result) => {
+    await core.setStake(1, ONE_THOUSAND_PNK.mul(4));
+    await core.getJurorBalance(deployer, 1).then((result) => {
       expect(result.staked).to.equal(ONE_THOUSAND_PNK.mul(4));
       expect(result.locked).to.equal(0);
       logJurorBalance(result);
@@ -450,11 +448,10 @@ describe("Demo pre-alpha1", function () {
     const trace = await network.provider.send("debug_traceTransaction", [tx.hash]);
     const [disputeId] = ethers.utils.defaultAbiCoder.decode(["uint"], `0x${trace.returnValue}`);
     console.log("Dispute Created");
-    expect(tx).to.emit(foreignGateway, "DisputeCreation"); //.withArgs(disputeId, deployer.address);
-    expect(tx).to.emit(foreignGateway, "OutgoingDispute"); //.withArgs(disputeId, deployer.address);
+    expect(tx).to.emit(foreignGateway, "DisputeCreation");
+    expect(tx).to.emit(foreignGateway, "OutgoingDispute");
     console.log(`disputeId: ${disputeId}`);
     const coreId = disputeId - 1;
-    // let events = await foreignGateway.queryFilter(OutgoingMessage);
 
     const lastBlock = await ethers.provider.getBlock(tx.blockNumber - 1);
     const disputeHash = ethers.utils.solidityKeccak256(
@@ -507,7 +504,7 @@ describe("Demo pre-alpha1", function () {
     await core.passPeriod(coreId);
     expect((await core.disputes(coreId)).period).to.equal(Period.vote);
 
-    await disputeKit.connect(await ethers.getSigner(deployer)).castVote(coreId, [0, 1, 2], 0, 0);
+    await disputeKit.connect(await ethers.getSigner(deployer)).castVote(coreId, [0, 1, 2], 0, 0, "");
     await core.passPeriod(coreId);
     await core.passPeriod(coreId);
     expect((await core.disputes(coreId)).period).to.equal(Period.execution);
@@ -600,6 +597,6 @@ describe("Demo pre-alpha1", function () {
   }
 });
 
-const logJurorBalance = function (result) {
+const logJurorBalance = async (result) => {
   console.log("staked=%s, locked=%s", ethers.utils.formatUnits(result.staked), ethers.utils.formatUnits(result.locked));
 };
