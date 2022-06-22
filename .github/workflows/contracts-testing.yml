@@ -36,7 +36,11 @@ jobs:
     #  run: |
     #    echo "current dir: $PWD"
     #    yarn install
-             
+
+    - name: Install Yarn 3
+      run: |
+        yarn prepare
+
     - name: Install contracts dependencies
       run: |
         yarn workspace @kleros/kleros-v2-contracts install
