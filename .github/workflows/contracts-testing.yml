@@ -39,7 +39,7 @@ jobs:
 
     - name: Install Yarn 3
       run: |
-        yarn prepare
+        yarn set version 3.2.x
 
     - name: Install contracts dependencies
       run: |
