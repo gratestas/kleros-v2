@@ -12,5 +12,10 @@
   "dependencies": {
     "@graphprotocol/graph-cli": "^0.30.3",
     "@graphprotocol/graph-ts": "^0.27.0"
+  },
+  "overrides": {
+    "@graphprotocol/graph-cli": {
+      "gluegun": "4.7.1"
+    }
   }
 }
